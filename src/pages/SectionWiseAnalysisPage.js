@@ -11,11 +11,11 @@ function SectionWiseAnalysisPage({ processedData }) {
 
   const resultStats = useMemo(() => {
     return {
-      distinction: sectionData.filter((s) => parseFloat(s.percentage) >= 85).length,
-      firstClass: sectionData.filter((s) => parseFloat(s.percentage) >= 60 && parseFloat(s.percentage) < 85).length,
-      secondClass: sectionData.filter((s) => parseFloat(s.percentage) >= 50 && parseFloat(s.percentage) < 60).length,
-      passClass: sectionData.filter((s) => parseFloat(s.percentage) >= 35 && parseFloat(s.percentage) < 50).length,
-      fail: sectionData.filter((s) => parseFloat(s.percentage) < 35).length,
+      distinction: sectionData.filter((s) => s.RES === 'T').length,
+      firstClass: sectionData.filter((s) => s.RES === '1').length,
+      secondClass: sectionData.filter((s) => s.RES === '2').length,
+      passClass: sectionData.filter((s) => s.RES !== 'NC' && s.RES !== 'T' && s.RES !== '1' && s.RES !== '2').length,
+      fail: sectionData.filter((s) => s.RES === 'NC').length,
     };
   }, [sectionData]);
 
@@ -30,10 +30,10 @@ function SectionWiseAnalysisPage({ processedData }) {
   const pieTotal = useMemo(() => pieData.reduce((s, x) => s + x.value, 0), [pieData]);
 
   const totalStudents = sectionData.length;
-  const appeared = totalStudents;
-  const promoted = sectionData.filter((s) => parseFloat(s.percentage) >= 35).length;
+  const discontinued = sectionData.filter((s) => (s.subjects || []).some((sub) => sub.isAbsent)).length;
+  const appeared = totalStudents - discontinued;
+  const promoted = sectionData.filter((s) => s.RES !== 'NC').length;
   const passPercentage = totalStudents > 0 ? ((promoted / totalStudents) * 100).toFixed(1) : 0;
-  const discontinued = 0;
 
   const pieTooltip = ({ active, payload }) => {
     if (!active || !payload?.length) return null;

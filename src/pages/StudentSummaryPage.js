@@ -47,6 +47,26 @@ function getSummaryRowMarks(student) {
   });
 }
 
+function subjectForLangCode(student, codePrefix) {
+  return (student.subjects || []).find((s) => normCodePrefix(s).startsWith(codePrefix)) || null;
+}
+
+/** Per summary column: whether that paper is failed (same rules as processedData subject.failed). */
+function getSummaryRowFailFlags(student) {
+  return SUMMARY_SUBJECT_HEADERS.map((h) => {
+    if (h.kind === 'lang') {
+      const sub = subjectForLangCode(student, h.code);
+      return sub ? !!sub.failed : false;
+    }
+    const sub = (student.subjects || [])[h.index];
+    return sub ? !!sub.failed : false;
+  });
+}
+
+function getStudentClass(student) {
+  return student.RES === 'NC' ? 'Fail' : getOverallClass(student.percentage);
+}
+
 function StudentSummaryPage({ processedData }) {
   const [sectionFilter, setSectionFilter] = useState('all');
   const [classFilter, setClassFilter] = useState('all');
@@ -60,7 +80,7 @@ function StudentSummaryPage({ processedData }) {
     }
 
     if (classFilter !== 'all') {
-      list = list.filter((s) => getOverallClass(s.percentage) === classFilter);
+      list = list.filter((s) => getStudentClass(s) === classFilter);
     }
 
     const q = search.trim().toLowerCase();
@@ -180,21 +200,41 @@ function StudentSummaryPage({ processedData }) {
             <tbody>
               {filteredStudents.map((student, idx) => {
                 const marks = getSummaryRowMarks(student);
+                const failFlags = getSummaryRowFailFlags(student);
+                const rowClass = getStudentClass(student);
+                const isFail = rowClass === 'Fail';
                 return (
-                  <tr key={`${student['REGISTER NUMBER']}-${student.section}-${idx}`}>
+                  <tr
+                    key={`${student['REGISTER NUMBER']}-${student.section}-${idx}`}
+                    className={isFail ? 'student-summary-row--fail' : undefined}
+                  >
                     <td className="ds-num">{idx + 1}</td>
                     <td>{student['REGISTER NUMBER']}</td>
                     <td className="subject-cell">{student['CANDIDATE NAME']}</td>
                     <td>{student.section}</td>
                     <td>{student.stream}</td>
-                    {marks.map((m, i) => (
-                      <td key={SUMMARY_SUBJECT_HEADERS[i].key} className="ds-num">
-                        {m}
-                      </td>
-                    ))}
+                    {marks.map((m, i) => {
+                      const h = SUMMARY_SUBJECT_HEADERS[i];
+                      const paperFailed = failFlags[i];
+                      return (
+                        <td
+                          key={h.key}
+                          className={['ds-num', paperFailed ? 'student-summary-mark--fail' : '']
+                            .filter(Boolean)
+                            .join(' ')}
+                          title={
+                            paperFailed
+                              ? `Failed / below requirement — ${h.title}`
+                              : undefined
+                          }
+                        >
+                          {m}
+                        </td>
+                      );
+                    })}
                     <td className="ds-num ds-num--emphasis">{student['G.TOT'] ?? '—'}</td>
                     <td className="ds-num ds-num--emphasis">{student.percentage}%</td>
-                    <td>{getOverallClass(student.percentage)}</td>
+                    <td className={isFail ? 'student-summary-class--fail' : undefined}>{rowClass}</td>
                   </tr>
                 );
               })}

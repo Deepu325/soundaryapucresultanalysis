@@ -31,6 +31,16 @@ function SectionAndSubjectPage({ processedData }) {
 
   const heatmapRows = useMemo(() => {
     const subjectMap = {};
+    const practicalSubjectCodes = new Set(['33', '34', '36', '41', '40']);
+
+    const isSubjectFailed = ({ subjectCode, th, total, isAbsent }) => {
+      if (isAbsent) return true;
+      if (total === null || total < 35) return true;
+      if (practicalSubjectCodes.has(subjectCode)) {
+        return th === null || th < 21;
+      }
+      return th === null || th < 24;
+    };
 
     sectionStudents.forEach((student) => {
       (student.subjects || []).forEach((subject) => {
@@ -49,12 +59,21 @@ function SectionAndSubjectPage({ processedData }) {
         }
 
         const marks = parseFloat(subject.total) || 0;
+        const failed = isSubjectFailed({
+          subjectCode: code,
+          th: subject.th,
+          total: subject.total,
+          isAbsent: subject.isAbsent
+        });
+
         if (marks === 100) subjectMap[code].centums += 1;
-        if (marks >= 85) subjectMap[code].distinction += 1;
+        if (failed) {
+          subjectMap[code].fail += 1;
+        } else if (marks >= 85) subjectMap[code].distinction += 1;
         else if (marks >= 60) subjectMap[code].firstClass += 1;
         else if (marks >= 50) subjectMap[code].secondClass += 1;
         else if (marks >= 35) subjectMap[code].thirdClass += 1;
-        else subjectMap[code].fail += 1;
+        else subjectMap[code].fail += 1; // fallback, though should be covered
       });
     });
 
@@ -94,9 +113,9 @@ function SectionAndSubjectPage({ processedData }) {
 
   const getShortSubject = (code, subjectName) => subjectShortNameMap[code] || subjectName.slice(0, 8).toUpperCase();
   const totalStudents = sectionStudents.length;
-  const discontinued = 0;
-  const totalAppeared = totalStudents;
-  const promoted = sectionStudents.filter((s) => parseFloat(s.percentage) >= 35).length;
+  const discontinued = sectionStudents.filter((s) => (s.subjects || []).some((sub) => sub.isAbsent)).length;
+  const totalAppeared = totalStudents - discontinued;
+  const promoted = sectionStudents.filter((s) => s.RES !== 'NC').length;
   const passPercentage = totalStudents > 0 ? ((promoted / totalStudents) * 100).toFixed(1) : '0.0';
 
   return (

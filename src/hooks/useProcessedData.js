@@ -34,6 +34,25 @@ function useProcessedData(enabled = true) {
   const processedData = useMemo(() => {
     if (!data) return null;
 
+    const practicalSubjectCodes = new Set(['33', '34', '36', '41', '40']);
+
+    const normalizeScore = (value) => {
+      if (value === null || value === undefined || value === '' || value === 'AA' || value === 'aa') {
+        return null;
+      }
+      const num = Number(value);
+      return Number.isFinite(num) ? num : null;
+    };
+
+    const isSubjectFailed = ({ subjectCode, th, total, isAbsent }) => {
+      if (isAbsent) return true;
+      if (total === null || total < 35) return true;
+      if (practicalSubjectCodes.has(subjectCode)) {
+        return th === null || th < 21;
+      }
+      return th === null || th < 24;
+    };
+
     const allStudents = [];
 
     Object.entries(data).forEach(([section, students]) => {
@@ -42,36 +61,67 @@ function useProcessedData(enabled = true) {
 
       students.forEach((student) => {
         let subjects = (student.subjects || []).map((sub) => {
-          const th = parseFloat(sub.th) || 0;
-          const ip = parseFloat(sub.ip) || 0;
-          const total = sub.total === null || sub.total === undefined || sub.total === ''
-            ? th + ip
-            : parseFloat(sub.total) || 0;
+          const code = sub.code?.toString().replace('*', '') || '';
+          const th = normalizeScore(sub.th);
+          const ip = normalizeScore(sub.ip);
+          const totalRaw = normalizeScore(sub.total);
+          const isAbsent = String(sub.th).toUpperCase() === 'AA';
+          const total = totalRaw !== null ? totalRaw : (th || 0) + (ip || 0);
 
           return {
             ...sub,
+            subjectCode: code,
             th,
             ip,
             total,
+            isAbsent,
+            failed: isSubjectFailed({ subjectCode: code, th, total, isAbsent }),
           };
         });
 
         if (subjects.length < 6 && student.SUB) {
           const code = student.SUB.toString().replace('*', '');
+          const th = normalizeScore(student.TH);
+          const ip = normalizeScore(student['I/P']);
+          const totalRaw = normalizeScore(student.TOT);
+          const isAbsent = String(student.TH).toUpperCase() === 'AA';
+          const total = totalRaw !== null ? totalRaw : (th || 0) + (ip || 0);
+
           subjects = [
             ...subjects,
             {
               code: student.SUB,
+              subjectCode: code,
               name: subjectNames[code] || student.SUB,
-              th: parseFloat(student.TH) || 0,
-              ip: parseFloat(student['I/P']) || 0,
-              total: parseFloat(student.TOT) || 0,
+              th,
+              ip,
+              total,
+              isAbsent,
+              failed: isSubjectFailed({ subjectCode: code, th, total, isAbsent }),
             },
           ];
         }
 
         const percentage = (((student['G.TOT'] || 0) / 600) * 100).toFixed(1);
-        const resultLabel = student.RES === 'T' ? 'Distinction' : student.RES === '1' ? 'Pass' : student.RES;
+        const subjectFailed = subjects.some((sub) => sub.failed);
+        const finalResultCode = subjectFailed
+          ? 'NC'
+          : percentage >= 85
+          ? 'T'
+          : percentage >= 60
+          ? '1'
+          : percentage >= 50
+          ? '2'
+          : '1';
+        const resultLabel = subjectFailed
+          ? 'Fail'
+          : percentage >= 85
+          ? 'Distinction'
+          : percentage >= 60
+          ? 'First Class'
+          : percentage >= 50
+          ? 'Second Class'
+          : 'Pass Class';
 
         allStudents.push({
           ...student,
@@ -79,6 +129,7 @@ function useProcessedData(enabled = true) {
           stream,
           subjects,
           percentage,
+          RES: finalResultCode,
           resultLabel,
         });
       });

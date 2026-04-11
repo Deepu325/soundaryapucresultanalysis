@@ -17,6 +17,7 @@ function StudentCard({ student, rank }) {
   const getResultClass = (res) => {
     if (res === 'T') return 'distinction';
     if (res === '1') return 'pass';
+    if (res === '2') return 'second';
     if (res === 'NC') return 'nc';
     return 'fail';
   };
@@ -38,9 +39,7 @@ function StudentCard({ student, rank }) {
 
       <div className="subjects-list">
         {student.subjects.map((sub, i) => {
-          const displayTotal = sub.total !== null && sub.total !== undefined
-            ? sub.total
-            : (parseFloat(sub.th) || 0) + (parseFloat(sub.ip) || 0);
+          const displayTotal = sub.isAbsent ? 'AA' : sub.total;
 
           return (
             <div key={`${sub.code}-${i}`} className="subject-item">

@@ -63,6 +63,9 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
           registerNumber: student['REGISTER NUMBER'],
           section: student.section,
           mark: parseFloat(matched.total) || 0,
+          isAbsent: matched.isAbsent,
+          th: matched.th,
+          subjectCode: getSubjectCode(matched),
         });
       }
     });
@@ -79,16 +82,58 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
     [selectedSubjectStudents]
   );
 
-  const totalStudents = selectedSubjectMarks.length;
-  const discontinued = 0;
-  const totalAppeared = totalStudents;
-  const distinction = selectedSubjectMarks.filter((mark) => mark >= 85).length;
-  const firstClass = selectedSubjectMarks.filter((mark) => mark >= 60 && mark < 85).length;
-  const secondClass = selectedSubjectMarks.filter((mark) => mark >= 50 && mark < 60).length;
-  const passClass = selectedSubjectMarks.filter((mark) => mark >= 35 && mark < 50).length;
-  const detained = selectedSubjectMarks.filter((mark) => mark < 35).length;
-  const promoted = selectedSubjectMarks.filter((mark) => mark >= 35).length;
-  const centums = selectedSubjectMarks.filter((mark) => mark === 100).length;
+  const totalStudents = selectedSubjectStudents.length;
+  const discontinued = selectedSubjectStudents.filter((s) => s.isAbsent).length;
+  const totalAppeared = totalStudents - discontinued;
+
+  const practicalSubjectCodes = new Set(['33', '34', '36', '41', '40']);
+
+  const isSubjectFailed = ({ subjectCode, th, total, isAbsent }) => {
+    if (isAbsent) return true;
+    if (total === null || total < 35) return true;
+    if (practicalSubjectCodes.has(subjectCode)) {
+      return th === null || th < 21;
+    }
+    return th === null || th < 24;
+  };
+
+  const distinction = selectedSubjectStudents.filter((s) => !isSubjectFailed({
+    subjectCode: s.subjectCode,
+    th: s.th,
+    total: s.mark,
+    isAbsent: s.isAbsent
+  }) && s.mark >= 85).length;
+  const firstClass = selectedSubjectStudents.filter((s) => !isSubjectFailed({
+    subjectCode: s.subjectCode,
+    th: s.th,
+    total: s.mark,
+    isAbsent: s.isAbsent
+  }) && s.mark >= 60 && s.mark < 85).length;
+  const secondClass = selectedSubjectStudents.filter((s) => !isSubjectFailed({
+    subjectCode: s.subjectCode,
+    th: s.th,
+    total: s.mark,
+    isAbsent: s.isAbsent
+  }) && s.mark >= 50 && s.mark < 60).length;
+  const passClass = selectedSubjectStudents.filter((s) => !isSubjectFailed({
+    subjectCode: s.subjectCode,
+    th: s.th,
+    total: s.mark,
+    isAbsent: s.isAbsent
+  }) && s.mark >= 35 && s.mark < 50).length;
+  const detained = selectedSubjectStudents.filter((s) => isSubjectFailed({
+    subjectCode: s.subjectCode,
+    th: s.th,
+    total: s.mark,
+    isAbsent: s.isAbsent
+  })).length;
+  const promoted = selectedSubjectStudents.filter((s) => !isSubjectFailed({
+    subjectCode: s.subjectCode,
+    th: s.th,
+    total: s.mark,
+    isAbsent: s.isAbsent
+  })).length;
+  const centums = selectedSubjectStudents.filter((s) => s.mark === 100).length;
   const passPercentage = totalStudents > 0 ? ((promoted / totalStudents) * 100).toFixed(1) : '0.0';
 
   const pieData = useMemo(() => {
