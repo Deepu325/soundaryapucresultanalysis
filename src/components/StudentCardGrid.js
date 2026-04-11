@@ -37,12 +37,18 @@ function StudentCard({ student, rank }) {
       </div>
 
       <div className="subjects-list">
-        {student.subjects.map((sub, i) => (
-          <div key={`${sub.code}-${i}`} className="subject-item">
-            <span className="sub-name">{sub.name}</span>
-            <span className="mark total">{sub.total}</span>
-          </div>
-        ))}
+        {student.subjects.map((sub, i) => {
+          const displayTotal = sub.total !== null && sub.total !== undefined
+            ? sub.total
+            : (parseFloat(sub.th) || 0) + (parseFloat(sub.ip) || 0);
+
+          return (
+            <div key={`${sub.code}-${i}`} className="subject-item">
+              <span className="sub-name">{sub.name}</span>
+              <span className="mark total">{displayTotal}</span>
+            </div>
+          );
+        })}
       </div>
 
       <div className="card-footer">

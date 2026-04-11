@@ -41,7 +41,20 @@ function useProcessedData(enabled = true) {
       const stream = streamMap[streamPrefix] || 'Commerce';
 
       students.forEach((student) => {
-        let subjects = student.subjects || [];
+        let subjects = (student.subjects || []).map((sub) => {
+          const th = parseFloat(sub.th) || 0;
+          const ip = parseFloat(sub.ip) || 0;
+          const total = sub.total === null || sub.total === undefined || sub.total === ''
+            ? th + ip
+            : parseFloat(sub.total) || 0;
+
+          return {
+            ...sub,
+            th,
+            ip,
+            total,
+          };
+        });
 
         if (subjects.length < 6 && student.SUB) {
           const code = student.SUB.toString().replace('*', '');

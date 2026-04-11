@@ -1,70 +1,64 @@
-# Getting Started with Create React App
+# SPUC Result Analysis Dashboard
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Overview
 
-## Available Scripts
+This project is a React-based result analysis dashboard developed for **SPUC** (Second Pre-University College) to visualize II PU examination performance. It is designed to help administrators and teachers review student performance by section, subject, and overall ranking, with powerful visual summaries and fast access to the top performers.
 
-In the project directory, you can run:
+## Key Features
 
-### `npm start`
+- ** Toppers Page:** Displays top performers in college, science, commerce, and section views.
+- ** Section Wise Analysis:** Provides detailed section analytics with result distribution and performance cards.
+- ** Subject Analysis Ready:** Supports future section-and-subject result breakdown with clear UX structure.
+- **Sidebar Navigation:** Clean side menu for fast access to key analysis pages.
+- **Responsive Design:** Works on both desktop and tablet layouts.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Project Structure
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- `src/App.js` - Main dashboard app logic and view switching.
+- `src/App.css` - Dashboard styling and sidebar layout.
+- `public/students.json` - Student result dataset used by the app.
+- `src/index.js` - React entry point.
 
-### `npm test`
+## How to Run
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Start the development server:
+   ```bash
+   npm start
+   ```
+3. Open the app in your browser:
+   ```
+   http://localhost:3000
+   ```
 
-### `npm run build`
+## Available Pages
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- **Toppers** — College and stream top-10 student rankings.
+- **Section Wise Analysis** — Detailed section metrics with pie chart distribution.
+- **Section and Subject Analysis** — Planned support for combined section/subject insights.
+- **Subject Wise Result Analysis** — Planned view for subject-level performance reporting.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Data Details
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- The app reads student data from `public/students.json`.
+- It calculates section-level statistics including pass rate, distinctions, averages, and top scorers.
+- The dashboard supports both science and commerce streams, including extra subject handling for commerce students.
 
-### `npm run eject`
+## Tech Stack
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- React
+- Recharts for charts
+- Create React App
+- JavaScript, HTML, CSS
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Notes
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- The project is tailored for SPUC result analysis and can be extended to add filter controls, export features, and subject-specific charts.
+- The current implementation focuses on section-level analysis and results distribution.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Contact
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+For updates or customization, modify the components in `src/App.js` and styles in `src/App.css`.
