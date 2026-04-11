@@ -77,11 +77,6 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
     return matched?.label || selectedSubject;
   }, [subjects, selectedSubject]);
 
-  const selectedSubjectMarks = useMemo(
-    () => selectedSubjectStudents.map((s) => s.mark),
-    [selectedSubjectStudents]
-  );
-
   const totalStudents = selectedSubjectStudents.length;
   const discontinued = selectedSubjectStudents.filter((s) => s.isAbsent).length;
   const totalAppeared = totalStudents - discontinued;
