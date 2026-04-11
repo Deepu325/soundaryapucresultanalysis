@@ -36,8 +36,12 @@ function Sidebar({ activePage, onNavigate, onLogout }) {
         ))}
       </nav>
       <div className="sidebar-footer">
-        <p>SPUC PU College</p>
-        <small>Results analytics</small>
+        <img
+          className="sidebar-footer-logo"
+          src={`${process.env.PUBLIC_URL}/sims-logo-bca.jpeg`}
+          alt="SIMS BCA"
+          loading="lazy"
+        />
         {onLogout ? (
           <button type="button" className="sidebar-logout" onClick={onLogout}>
             Log out

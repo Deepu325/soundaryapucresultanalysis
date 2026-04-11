@@ -131,14 +131,14 @@
   color: white;
 }
 
-.sidebar-footer p {
-  font-weight: 600;
-  margin-bottom: 5px;
-}
-
-.sidebar-footer small {
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.8);
+.sidebar-footer-logo {
+  display: block;
+  max-width: 100%;
+  width: 140px;
+  height: auto;
+  margin: 0 auto 12px;
+  border-radius: 8px;
+  object-fit: contain;
 }
 
 .sidebar-credit-section {
@@ -1075,7 +1075,7 @@
 }
 
 .sidebar-logout {
-  margin-top: 12px;
+  margin-top: 0;
   padding: 8px 12px;
   width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.35);
