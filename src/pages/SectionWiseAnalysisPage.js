@@ -33,7 +33,8 @@ function SectionWiseAnalysisPage({ processedData }) {
   const discontinued = sectionData.filter((s) => (s.subjects || []).some((sub) => sub.isAbsent)).length;
   const appeared = totalStudents - discontinued;
   const promoted = sectionData.filter((s) => s.RES !== 'NC').length;
-  const passPercentage = totalStudents > 0 ? ((promoted / totalStudents) * 100).toFixed(1) : 0;
+  const passPercentage =
+    appeared > 0 ? ((promoted / appeared) * 100).toFixed(1) : '0.0';
 
   const pieTooltip = ({ active, payload }) => {
     if (!active || !payload?.length) return null;

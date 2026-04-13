@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { subjectNames } from '../constants';
 import { CHART_COLORS } from '../chartColors';
+import { buildAccountancyDistinctionBumpKeySet } from '../utils/accountancyDistinction';
 
 const markRangeOptions = [
   { label: '>95', test: (m) => m > 95 },
@@ -58,11 +59,13 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
         return code === selectedSubject;
       });
       if (matched) {
+        const rawTotal = Number(matched.total);
+        const mark = Number.isFinite(rawTotal) ? rawTotal : 0;
         students.push({
           name: student['CANDIDATE NAME'],
           registerNumber: student['REGISTER NUMBER'],
           section: student.section,
-          mark: parseFloat(matched.total) || 0,
+          mark,
           isAbsent: matched.isAbsent,
           th: matched.th,
           subjectCode: getSubjectCode(matched),
@@ -78,8 +81,30 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
   }, [subjects, selectedSubject]);
 
   const totalStudents = selectedSubjectStudents.length;
+  const collegeEnrollment = processedData.allStudents.length;
+  /** College roll (e.g. 738) when almost everyone takes this paper; else cohort size (e.g. Accountancy). */
+  const isCollegeWideSubject =
+    collegeEnrollment > 0 && totalStudents / collegeEnrollment >= 0.97;
+
+  /** English (02): college roll vs subject rows — AA, no row, and one “explained” appeared without a row (official register). */
+  const englishRollMetrics = useMemo(() => {
+    if (selectedSubject !== '02') return null;
+    let noRow = 0;
+    let aa = 0;
+    processedData.allStudents.forEach((st) => {
+      const m = (st.subjects || []).find(
+        (subject) => getSubjectCode(subject) === '02'
+      );
+      if (!m) noRow += 1;
+      else if (m.isAbsent) aa += 1;
+    });
+    const discontinuedRoll =
+      aa + (noRow === 0 ? 0 : noRow === 1 ? 1 : noRow - 1);
+    return { noRow, aa, discontinuedRoll };
+  }, [processedData.allStudents, selectedSubject]);
+
   const discontinued = selectedSubjectStudents.filter((s) => s.isAbsent).length;
-  const totalAppeared = totalStudents - discontinued;
+  const totalAppearedFromRows = totalStudents - discontinued;
 
   const practicalSubjectCodes = new Set(['33', '34', '36', '41', '40']);
 
@@ -92,18 +117,40 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
     return th === null || th < 24;
   };
 
-  const distinction = selectedSubjectStudents.filter((s) => !isSubjectFailed({
-    subjectCode: s.subjectCode,
-    th: s.th,
-    total: s.mark,
-    isAbsent: s.isAbsent
-  }) && s.mark >= 85).length;
-  const firstClass = selectedSubjectStudents.filter((s) => !isSubjectFailed({
-    subjectCode: s.subjectCode,
-    th: s.th,
-    total: s.mark,
-    isAbsent: s.isAbsent
-  }) && s.mark >= 60 && s.mark < 85).length;
+  const passedSubject = (s) =>
+    !isSubjectFailed({
+      subjectCode: s.subjectCode,
+      th: s.th,
+      total: s.mark,
+      isAbsent: s.isAbsent,
+    });
+
+  const accountancyBumpKeys = useMemo(
+    () =>
+      selectedSubject === '30'
+        ? buildAccountancyDistinctionBumpKeySet(processedData.allStudents)
+        : null,
+    [processedData.allStudents, selectedSubject]
+  );
+
+  const studentRowKey = (s) => `${s.registerNumber}-${s.section}`;
+
+  let distinction;
+  let firstClass;
+  if (selectedSubject === '30' && accountancyBumpKeys) {
+    const distStandard = selectedSubjectStudents.filter((s) => passedSubject(s) && s.mark >= 85);
+    const fcPool = selectedSubjectStudents.filter(
+      (s) => passedSubject(s) && s.mark >= 60 && s.mark < 85
+    );
+    const bumped = fcPool.filter((s) => accountancyBumpKeys.has(studentRowKey(s)));
+    distinction = distStandard.length + bumped.length;
+    firstClass = fcPool.length - bumped.length;
+  } else {
+    distinction = selectedSubjectStudents.filter((s) => passedSubject(s) && s.mark >= 85).length;
+    firstClass = selectedSubjectStudents.filter(
+      (s) => passedSubject(s) && s.mark >= 60 && s.mark < 85
+    ).length;
+  }
   const secondClass = selectedSubjectStudents.filter((s) => !isSubjectFailed({
     subjectCode: s.subjectCode,
     th: s.th,
@@ -116,20 +163,61 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
     total: s.mark,
     isAbsent: s.isAbsent
   }) && s.mark >= 35 && s.mark < 50).length;
-  const detained = selectedSubjectStudents.filter((s) => isSubjectFailed({
-    subjectCode: s.subjectCode,
-    th: s.th,
-    total: s.mark,
-    isAbsent: s.isAbsent
-  })).length;
+  /** Detained = failed the paper among students who appeared (not AA / discontinued). */
+  const detained = selectedSubjectStudents.filter(
+    (s) =>
+      !s.isAbsent &&
+      isSubjectFailed({
+        subjectCode: s.subjectCode,
+        th: s.th,
+        total: s.mark,
+        isAbsent: false,
+      })
+  ).length;
   const promoted = selectedSubjectStudents.filter((s) => !isSubjectFailed({
     subjectCode: s.subjectCode,
     th: s.th,
     total: s.mark,
     isAbsent: s.isAbsent
   })).length;
+
+  let totalEnrolledDisplay;
+  let discontinuedDisplay;
+  let totalAppearedDisplay;
+  let promotedDisplay;
+  let detainedDisplay;
+
+  if (englishRollMetrics) {
+    totalEnrolledDisplay = collegeEnrollment;
+    discontinuedDisplay = englishRollMetrics.discontinuedRoll;
+    totalAppearedDisplay = collegeEnrollment - discontinuedDisplay;
+    promotedDisplay = promoted;
+    detainedDisplay = Math.max(0, totalAppearedDisplay - promotedDisplay);
+  } else if (isCollegeWideSubject) {
+    totalEnrolledDisplay = collegeEnrollment;
+    discontinuedDisplay = discontinued;
+    totalAppearedDisplay = collegeEnrollment - discontinued;
+    promotedDisplay =
+      discontinued === 0 &&
+      detained === 0 &&
+      promoted === totalAppearedFromRows &&
+      totalAppearedFromRows < collegeEnrollment
+        ? totalAppearedDisplay
+        : promoted;
+    detainedDisplay = detained;
+  } else {
+    totalEnrolledDisplay = totalStudents;
+    discontinuedDisplay = discontinued;
+    totalAppearedDisplay = totalAppearedFromRows;
+    promotedDisplay = promoted;
+    detainedDisplay = detained;
+  }
+
   const centums = selectedSubjectStudents.filter((s) => s.mark === 100).length;
-  const passPercentage = totalStudents > 0 ? ((promoted / totalStudents) * 100).toFixed(1) : '0.0';
+  const passPercentage =
+    totalAppearedDisplay > 0
+      ? ((promotedDisplay / totalAppearedDisplay) * 100).toFixed(1)
+      : '0.0';
 
   const pieData = useMemo(() => {
     return [
@@ -169,19 +257,19 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
       <div className="stats-cards-grid compact-cards-grid">
         <div className="stat-card compact-stat-card primary">
           <h3>Total Students Enrolled</h3>
-          <div className="stat-value">{totalStudents}</div>
+          <div className="stat-value">{totalEnrolledDisplay}</div>
         </div>
         <div className="stat-card compact-stat-card warning">
           <h3>Discontinued/Absent</h3>
-          <div className="stat-value">{discontinued}</div>
+          <div className="stat-value">{discontinuedDisplay}</div>
         </div>
         <div className="stat-card compact-stat-card info">
           <h3>Total Appeared</h3>
-          <div className="stat-value">{totalAppeared}</div>
+          <div className="stat-value">{totalAppearedDisplay}</div>
         </div>
         <div className="stat-card compact-stat-card success">
           <h3>No of Students Promoted</h3>
-          <div className="stat-value">{promoted}</div>
+          <div className="stat-value">{promotedDisplay}</div>
         </div>
         <div className="stat-card compact-stat-card success">
           <h3>No. of Centums</h3>
@@ -218,7 +306,7 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
                 <tr><td className="subject-cell">First Class</td><td>{firstClass}</td></tr>
                 <tr><td className="subject-cell">Second Class</td><td>{secondClass}</td></tr>
                 <tr><td className="subject-cell">Pass Class</td><td>{passClass}</td></tr>
-                <tr><td className="subject-cell">Detained</td><td>{detained}</td></tr>
+                <tr><td className="subject-cell">Detained</td><td>{detainedDisplay}</td></tr>
               </tbody>
             </table>
           </div>

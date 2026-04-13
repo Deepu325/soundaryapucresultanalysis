@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { buildAccountancyDistinctionBumpKeySet } from '../utils/accountancyDistinction';
 
 const subjectShortNameMap = {
   '01': 'KAN',
@@ -27,6 +28,11 @@ function SectionAndSubjectPage({ processedData }) {
   const sectionStudents = useMemo(
     () => processedData.allStudents.filter((student) => student.section === selectedSection),
     [processedData.allStudents, selectedSection]
+  );
+
+  const accountancyBumpKeys = useMemo(
+    () => buildAccountancyDistinctionBumpKeySet(processedData.allStudents),
+    [processedData.allStudents]
   );
 
   const heatmapRows = useMemo(() => {
@@ -65,11 +71,19 @@ function SectionAndSubjectPage({ processedData }) {
           total: subject.total,
           isAbsent: subject.isAbsent
         });
+        const rowKey = `${student['REGISTER NUMBER']}-${student.section}`;
+        const accountancyBumped =
+          code === '30' &&
+          !failed &&
+          marks >= 60 &&
+          marks < 85 &&
+          accountancyBumpKeys.has(rowKey);
 
         if (marks === 100) subjectMap[code].centums += 1;
         if (failed) {
           subjectMap[code].fail += 1;
         } else if (marks >= 85) subjectMap[code].distinction += 1;
+        else if (accountancyBumped) subjectMap[code].distinction += 1;
         else if (marks >= 60) subjectMap[code].firstClass += 1;
         else if (marks >= 50) subjectMap[code].secondClass += 1;
         else if (marks >= 35) subjectMap[code].thirdClass += 1;
@@ -78,7 +92,7 @@ function SectionAndSubjectPage({ processedData }) {
     });
 
     return Object.values(subjectMap).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
-  }, [sectionStudents]);
+  }, [sectionStudents, accountancyBumpKeys]);
 
   const maxHeatValue = useMemo(() => {
     if (!heatmapRows.length) return 1;
@@ -116,7 +130,8 @@ function SectionAndSubjectPage({ processedData }) {
   const discontinued = sectionStudents.filter((s) => (s.subjects || []).some((sub) => sub.isAbsent)).length;
   const totalAppeared = totalStudents - discontinued;
   const promoted = sectionStudents.filter((s) => s.RES !== 'NC').length;
-  const passPercentage = totalStudents > 0 ? ((promoted / totalStudents) * 100).toFixed(1) : '0.0';
+  const passPercentage =
+    totalAppeared > 0 ? ((promoted / totalAppeared) * 100).toFixed(1) : '0.0';
 
   return (
     <div>
