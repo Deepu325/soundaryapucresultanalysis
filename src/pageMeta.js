@@ -15,6 +15,10 @@ export const pageMeta = {
     title: 'Subject-wise results',
     subtitle: 'Distribution and student lists per subject.',
   },
+  'yearwise-analysis': {
+    title: 'Year wise analysis',
+    subtitle: 'Line graph by year with subject and section filters.',
+  },
   'student-summary': {
     title: 'Student summary',
     subtitle: 'Full roster with subject marks and filters.',

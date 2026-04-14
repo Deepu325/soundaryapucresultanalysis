@@ -37,9 +37,20 @@ export function computeGlobalKpis(allStudents) {
     const tot = parseFloat(s['G.TOT']) || 0;
     if (tot > topScore) topScore = tot;
   });
+
+  const appeared = allStudents.filter((student) =>
+    (student.subjects || []).some((subject) => !subject.isAbsent)
+  ).length;
+  const promoted = allStudents.filter(
+    (student) =>
+      (student.subjects || []).some((subject) => !subject.isAbsent) &&
+      !(student.subjects || []).some((subject) => subject.failed)
+  ).length;
+  const passPercent = appeared > 0 ? ((promoted / appeared) * 100).toFixed(1) : '0.0';
+
   return {
     totalStudents: dist.total,
-    passPercent: ((dist.passed / dist.total) * 100).toFixed(1),
+    passPercent,
     distinctionCount: dist.Distinction,
     topScore,
   };

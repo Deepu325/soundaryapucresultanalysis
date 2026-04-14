@@ -10,6 +10,7 @@ import SectionWiseAnalysisPage from './pages/SectionWiseAnalysisPage';
 import SectionAndSubjectPage from './pages/SectionAndSubjectPage';
 import SubjectwiseResultAnalysisPage from './pages/SubjectwiseResultAnalysisPage';
 import StudentSummaryPage from './pages/StudentSummaryPage';
+import YearWiseAnalysisPage from './pages/YearWiseAnalysisPage';
 import useProcessedData from './hooks/useProcessedData';
 import { clearSession, isStoredSessionValid, persistSession } from './auth/loginConfig';
 
@@ -49,7 +50,7 @@ function App() {
         <div className="dashboard">
           <main className="ds-page">
             <PageHeader activePage={activePage} />
-            <GlobalKpiStrip processedData={processedData} />
+            {activePage !== 'yearwise-analysis' && <GlobalKpiStrip processedData={processedData} />}
 
             {activePage === 'toppers' && (
               <div className="stats-grid stats-grid--secondary">
@@ -72,6 +73,7 @@ function App() {
             {activePage === 'section-analysis' && <SectionWiseAnalysisPage processedData={processedData} />}
             {activePage === 'section-subject' && <SectionAndSubjectPage processedData={processedData} />}
             {activePage === 'subjectwise-analysis' && <SubjectwiseResultAnalysisPage processedData={processedData} />}
+            {activePage === 'yearwise-analysis' && <YearWiseAnalysisPage />}
             {activePage === 'student-summary' && <StudentSummaryPage processedData={processedData} />}
           </main>
         </div>

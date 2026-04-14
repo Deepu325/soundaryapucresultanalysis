@@ -5,6 +5,7 @@ const NAV = [
   { id: 'section-analysis', icon: '📊', label: 'Section analysis' },
   { id: 'section-subject', icon: '📚', label: 'Section & subject' },
   { id: 'subjectwise-analysis', icon: '📈', label: 'Subjectwise analysis' },
+  { id: 'yearwise-analysis', icon: '📉', label: 'Year wise analysis' },
   { id: 'student-summary', icon: '👥', label: 'Student summary' },
 ];
 

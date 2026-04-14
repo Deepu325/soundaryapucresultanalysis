@@ -22,6 +22,130 @@ const markRangeOptions = [
 ];
 
 const getSubjectCode = (subject) => String(subject.code || '').replace('*', '').trim();
+const YEARWISE_SUBJECT_MAP = {
+  '01': 'KAN',
+  '02': 'ENG',
+  '03': 'HIN',
+  '09': 'SANS',
+  '22': 'ECO',
+  '27': 'B.STU',
+  '29': 'P.SCI',
+  '30': 'ACC',
+  '31': 'STAT',
+  '33': 'PHY',
+  '34': 'CHE',
+  '35': 'MAT',
+  '36': 'BIO',
+  '40': 'ELE',
+  '41': 'C.SCI',
+  '75': 'B.MAT',
+  '78': 'B.MAT',
+};
+
+const SUBJECT_SECTION_TEACHERS = {
+  '01': {
+    'PCMB A': 'HM',
+    'PCMB-B': 'TK',
+    'PCMB-C': 'NL',
+    'PCMB-D': 'PD',
+    'PCMB-E': 'HM',
+    'PCMC-F': 'HM',
+    'CEBA-C1': 'HM',
+    'CEBA-C2': 'NL',
+    'CEBA-C3': 'NL',
+    'SEBA-C4': 'TK',
+    'MEBA-C5': 'PD',
+    'MSBA-C5': 'TK',
+    'CSBA-C6': 'PD',
+    'PEBA-C5': 'HM',
+  },
+  '02': {
+    'PCMB A': 'CS',
+    'PCMB-B': 'SC',
+    'PCMB-C': 'SP',
+    'PCMB-D': 'CS',
+    'PCMB-E': 'SP',
+    'PCME-E': 'SP',
+    'PCMC-F': 'SC',
+    'CEBA-C1': 'SC/SP',
+    'CEBA-C2': 'CS/SC',
+    'CEBA-C3': 'CS/SD',
+    'SEBA-C4': 'SD/CS',
+    'MEBA-C5': 'SP',
+    'MSBA-C5': 'SP',
+    'CSBA-C6': 'SD/SC',
+    'PEBA-C5': 'SP',
+  },
+  '33': {
+    'PCMB A': 'KK/BI',
+    'PCMB-B': 'KK/BI',
+    'PCMB-C': 'AG/VG',
+    'PCMB-D': 'AG/VG',
+    'PCMB-E': 'KK/VG',
+    'PCME-C': 'AG/VG',
+    'PCME-E': 'AG/VG',
+    'PCMC-F': 'AG/BI',
+  },
+  '34': {
+    'PCMB A': 'RV/CK',
+    'PCMB-B': 'BRR/BK',
+    'PCMB-C': 'RV/BRR',
+    'PCMB-D': 'RV/BRR',
+    'PCMB-E': 'RV/CK',
+    'PCMC-F': 'BRR/BK',
+  },
+  '35': {
+    'PCMB A': 'CSS',
+    'PCMB-B': 'SY',
+    'PCMB-C': 'NS/SY',
+    'PCMB-D': 'NS/SY',
+    'PCMB-E': 'NS',
+    'PCMC-F': 'NS/CSS',
+  },
+  '36': {
+    'PCMB A': 'SM/JH',
+    'PCMB-B': 'JJH/RK',
+    'PCMB-C': 'SM/JH',
+    'PCMB-D': 'SM/RK/SSM',
+    'PCMB-E': 'SM/JH',
+  },
+  '41': {
+    'PCMC-C': 'SU',
+    'PCMC-F': 'SU',
+    'CEBA-C1': 'VD',
+    'CEBA-C2': 'SR',
+    'CEBA-C3': 'VD/SR',
+    'CSBA-C6': 'BA',
+  },
+  '27': {
+    'CEBA-C1': 'AGK',
+    'CEBA-C2': 'UR',
+    'CEBA-C3': 'KK',
+    'SEBA-C4': 'DM',
+    'MEBA-C5': 'PR',
+    'MSBA-C5': 'PR',
+    'CSBA-C6': 'CPM',
+    'PEBA-C5': 'PR',
+  },
+  '30': {
+    'CEBA-C1': 'DM',
+    'CEBA-C2': 'PR',
+    'CEBA-C3': 'CPM',
+    'SEBA-C4': 'KK',
+    'MEBA-C5': 'UR',
+    'MSBA-C5': 'UR',
+    'CSBA-C6': 'AGK',
+    'PEBA-C5': 'UR',
+  },
+  '22': {
+    'CEBA-C1': 'VK',
+    'CEBA-C2': 'VK',
+    'CEBA-C3': 'NS',
+    'SEBA-C4': 'NS',
+    'MEBA-C5': 'NS',
+    'PEBA-C5': 'NS',
+  },
+};
 
 function displaySubjectLabel(code, fallbackName) {
   return subjectNames[code] || fallbackName;
@@ -44,12 +168,40 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
 
   const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.code || '');
   const [selectedMarkRange, setSelectedMarkRange] = useState(markRangeOptions[0].label);
+  const [selectedStreamFilter, setSelectedStreamFilter] = useState('all');
+  const [yearWiseData, setYearWiseData] = useState(null);
 
   useEffect(() => {
     if (subjects.length && !subjects.some((s) => s.code === selectedSubject)) {
       setSelectedSubject(subjects[0].code);
     }
   }, [subjects, selectedSubject]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('./year-wise-analysis.json')
+      .then((res) => res.json())
+      .then((json) => {
+        if (!cancelled) setYearWiseData(json);
+      })
+      .catch(() => {
+        if (!cancelled) setYearWiseData(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const isLanguageOrCsSubject = useMemo(
+    () => ['01', '02', '03', '09', '41'].includes(selectedSubject),
+    [selectedSubject]
+  );
+
+  useEffect(() => {
+    if (!isLanguageOrCsSubject && selectedStreamFilter !== 'all') {
+      setSelectedStreamFilter('all');
+    }
+  }, [isLanguageOrCsSubject, selectedStreamFilter]);
 
   const selectedSubjectStudents = useMemo(() => {
     const students = [];
@@ -65,6 +217,7 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
           name: student['CANDIDATE NAME'],
           registerNumber: student['REGISTER NUMBER'],
           section: student.section,
+          stream: student.stream,
           mark,
           isAbsent: matched.isAbsent,
           th: matched.th,
@@ -73,6 +226,35 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
       }
     });
     return students;
+  }, [processedData.allStudents, selectedSubject]);
+
+  const englishSectionExpectedAppeared = useMemo(() => {
+    if (selectedSubject !== '02') return new Map();
+    const bySection = new Map();
+
+    processedData.allStudents.forEach((student) => {
+      const section = student.section;
+      if (!bySection.has(section)) {
+        bySection.set(section, { total: 0, noRow: 0, aa: 0 });
+      }
+      const bucket = bySection.get(section);
+      bucket.total += 1;
+
+      const english = (student.subjects || []).find((subject) => getSubjectCode(subject) === '02');
+      if (!english) {
+        bucket.noRow += 1;
+      } else if (english.isAbsent) {
+        bucket.aa += 1;
+      }
+    });
+
+    const expectedAppeared = new Map();
+    bySection.forEach((bucket, section) => {
+      const discontinued =
+        bucket.aa + (bucket.noRow === 0 ? 0 : bucket.noRow === 1 ? 1 : bucket.noRow - 1);
+      expectedAppeared.set(section, Math.max(0, bucket.total - discontinued));
+    });
+    return expectedAppeared;
   }, [processedData.allStudents, selectedSubject]);
 
   const selectedSubjectLabel = useMemo(() => {
@@ -252,6 +434,139 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
       .sort((a, b) => b.mark - a.mark);
   }, [selectedSubjectStudents, selectedMarkRange]);
 
+  const sectionWiseRows = useMemo(() => {
+    const bySection = new Map();
+    selectedSubjectStudents.forEach((student) => {
+      if (!bySection.has(student.section)) {
+        bySection.set(student.section, {
+          section: student.section,
+          stream: student.stream,
+          appeared: 0,
+          distinction: 0,
+          firstClass: 0,
+          secondClass: 0,
+          passClass: 0,
+          fail: 0,
+          promoted: 0,
+          centums: 0,
+          markTotal: 0,
+        });
+      }
+      const row = bySection.get(student.section);
+      if (student.isAbsent) return;
+
+      row.appeared += 1;
+      row.markTotal += student.mark;
+      if (student.mark === 100) row.centums += 1;
+      const failed = isSubjectFailed({
+        subjectCode: student.subjectCode,
+        th: student.th,
+        total: student.mark,
+        isAbsent: false,
+      });
+
+      if (failed) {
+        row.fail += 1;
+        return;
+      }
+
+      row.promoted += 1;
+      const bumpedDistinction =
+        selectedSubject === '30' && accountancyBumpKeys?.has(studentRowKey(student)) && student.mark >= 60 && student.mark < 85;
+
+      if (student.mark >= 85 || bumpedDistinction) row.distinction += 1;
+      else if (student.mark >= 60) row.firstClass += 1;
+      else if (student.mark >= 50) row.secondClass += 1;
+      else if (student.mark >= 35) row.passClass += 1;
+      else row.fail += 1;
+    });
+
+    return [...bySection.values()]
+      .map((row) => {
+        const adjustedAppeared =
+          selectedSubject === '02' ? (englishSectionExpectedAppeared.get(row.section) ?? row.appeared) : row.appeared;
+        const adjustedFail =
+          selectedSubject === '02' ? Math.max(0, adjustedAppeared - row.promoted) : row.fail;
+        return {
+          ...row,
+          appeared: adjustedAppeared,
+          fail: adjustedFail,
+          passPercent: adjustedAppeared > 0 ? ((row.promoted / adjustedAppeared) * 100).toFixed(1) : '0.0',
+          classAvg: adjustedAppeared > 0 ? (row.markTotal / adjustedAppeared).toFixed(2) : '0.00',
+        };
+      })
+      .sort((a, b) => a.section.localeCompare(b.section));
+  }, [selectedSubjectStudents, selectedSubject, accountancyBumpKeys, englishSectionExpectedAppeared]);
+
+  const filteredSectionWiseRows = useMemo(() => {
+    if (!isLanguageOrCsSubject || selectedStreamFilter === 'all') return sectionWiseRows;
+    const expectedStream = selectedStreamFilter === 'science' ? 'Science' : 'Commerce';
+    return sectionWiseRows.filter((row) => row.stream === expectedStream);
+  }, [sectionWiseRows, selectedStreamFilter, isLanguageOrCsSubject]);
+
+  const sectionHeatMax = useMemo(() => {
+    if (!filteredSectionWiseRows.length) return 1;
+    return Math.max(
+      ...filteredSectionWiseRows.flatMap((row) => [
+        row.appeared,
+        row.distinction,
+        row.firstClass,
+        row.secondClass,
+        row.passClass,
+        row.fail,
+        row.centums,
+      ]),
+      1
+    );
+  }, [filteredSectionWiseRows]);
+
+  const heatCellStyle = (value, isFail = false) => {
+    if (value === 0) return { backgroundColor: '#ffffff' };
+    const intensity = value / sectionHeatMax;
+    if (isFail) return { backgroundColor: `rgba(220, 38, 38, ${0.18 + intensity * 0.6})` };
+    const hue = Math.round(intensity * 120);
+    return { backgroundColor: `hsla(${hue}, 85%, 45%, ${0.18 + intensity * 0.55})` };
+  };
+
+  const sectionLabelWithTeacher = (section) => {
+    const subjectTeachers = SUBJECT_SECTION_TEACHERS[selectedSubject] || {};
+    let initials = subjectTeachers[section];
+    if (!initials && section === 'PCMC-C') initials = subjectTeachers['PCME-C'] || subjectTeachers['PCMB-C'];
+    if (!initials && section === 'PCME-C') initials = subjectTeachers['PCMC-C'] || subjectTeachers['PCMB-C'];
+    return initials ? `${section} (${initials})` : section;
+  };
+
+  const officialTotalsRow = useMemo(() => {
+    const yearwiseSubject = YEARWISE_SUBJECT_MAP[selectedSubject];
+    if (!yearwiseSubject || !yearWiseData?.records?.length) return null;
+    const years = yearWiseData.years || ['2024-25', '2025-26'];
+    const latestYear = years[years.length - 1];
+    const targetSection =
+      selectedStreamFilter === 'science'
+        ? 'SCI'
+        : selectedStreamFilter === 'commerce'
+        ? 'COM'
+        : 'TOT';
+    const row = yearWiseData.records.find(
+      (r) => r.subject === yearwiseSubject && r.year === latestYear && r.section === targetSection
+    );
+    if (!row) return null;
+    const fail = Math.max(0, (row.totalAppeared || 0) - (row.promoted || 0));
+    return {
+      section: `${targetSection} TOTAL (${latestYear})`,
+      appeared: row.totalAppeared || 0,
+      distinction: row.distinction || 0,
+      firstClass: row.firstClass || 0,
+      secondClass: row.secondClass || 0,
+      passClass: row.passClass || 0,
+      fail,
+      centums: row.centums || 0,
+      classAvg: '-',
+      passPercent:
+        row.totalAppeared > 0 ? ((row.promoted / row.totalAppeared) * 100).toFixed(1) : '0.0',
+    };
+  }, [selectedSubject, yearWiseData, selectedStreamFilter]);
+
   return (
     <div className="section-analysis-page">
       <div className="stats-cards-grid compact-cards-grid">
@@ -342,6 +657,92 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
       </div>
 
       <div className="chart-container">
+        <h3>{selectedSubjectLabel} — overall section-wise analysis</h3>
+        {isLanguageOrCsSubject ? (
+          <div className="section-filter ds-field-row">
+            <label htmlFor="subject-stream-filter">Stream</label>
+            <select
+              id="subject-stream-filter"
+              className="ds-select"
+              value={selectedStreamFilter}
+              onChange={(e) => setSelectedStreamFilter(e.target.value)}
+            >
+              <option value="all">All</option>
+              <option value="science">Science</option>
+              <option value="commerce">Commerce</option>
+            </select>
+          </div>
+        ) : null}
+        <div className="ds-heatmap-legend" aria-hidden>
+          <span className="ds-heatmap-legend__item">
+            <span className="ds-heatmap-legend__swatch" style={{ background: 'hsla(120, 85%, 42%, 0.45)' }} />
+            Higher count
+          </span>
+          <span className="ds-heatmap-legend__item">
+            <span className="ds-heatmap-legend__swatch" style={{ background: '#ffffff', borderColor: '#e2e8f0' }} />
+            Zero
+          </span>
+          <span className="ds-heatmap-legend__item">
+            <span className="ds-heatmap-legend__swatch" style={{ background: 'rgba(220, 38, 38, 0.45)' }} />
+            Fail count
+          </span>
+        </div>
+        <div className="heatmap-table-wrapper">
+          <table className="heatmap-table">
+            <thead>
+              <tr>
+                <th>Section</th>
+                <th>Appeared</th>
+                <th>Distinction</th>
+                <th>I Class</th>
+                <th>II Class</th>
+                <th>Pass Class</th>
+                <th>Fail</th>
+                <th>Centums</th>
+                <th>Class Avg</th>
+                <th>Pass %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredSectionWiseRows.map((row) => (
+                <tr key={row.section}>
+                  <td className="subject-cell">{sectionLabelWithTeacher(row.section)}</td>
+                  <td style={heatCellStyle(row.appeared)}>{row.appeared}</td>
+                  <td style={heatCellStyle(row.distinction)}>{row.distinction}</td>
+                  <td style={heatCellStyle(row.firstClass)}>{row.firstClass}</td>
+                  <td style={heatCellStyle(row.secondClass)}>{row.secondClass}</td>
+                  <td style={heatCellStyle(row.passClass)}>{row.passClass}</td>
+                  <td style={heatCellStyle(row.fail, true)}>{row.fail}</td>
+                  <td style={heatCellStyle(row.centums)}>{row.centums}</td>
+                  <td className="ds-num">{row.classAvg}</td>
+                  <td className="ds-num ds-num--emphasis">{row.passPercent}%</td>
+                </tr>
+              ))}
+              {officialTotalsRow ? (
+                <tr>
+                  <td className="subject-cell"><strong>{officialTotalsRow.section}</strong></td>
+                  <td className="ds-num"><strong>{officialTotalsRow.appeared}</strong></td>
+                  <td className="ds-num"><strong>{officialTotalsRow.distinction}</strong></td>
+                  <td className="ds-num"><strong>{officialTotalsRow.firstClass}</strong></td>
+                  <td className="ds-num"><strong>{officialTotalsRow.secondClass}</strong></td>
+                  <td className="ds-num"><strong>{officialTotalsRow.passClass}</strong></td>
+                  <td className="ds-num"><strong>{officialTotalsRow.fail}</strong></td>
+                  <td className="ds-num"><strong>{officialTotalsRow.centums}</strong></td>
+                  <td className="ds-num"><strong>{officialTotalsRow.classAvg}</strong></td>
+                  <td className="ds-num ds-num--emphasis"><strong>{officialTotalsRow.passPercent}%</strong></td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+        {filteredSectionWiseRows.length === 0 ? (
+          <div className="ds-empty" role="status">
+            No section rows for the selected stream.
+          </div>
+        ) : null}
+      </div>
+
+      <div className="chart-container">
         <h3>{selectedSubjectLabel} — students by mark range</h3>
         <div className="section-filter ds-field-row">
           <label htmlFor="mark-range-select">Mark range</label>
@@ -387,6 +788,7 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
           </div>
         )}
       </div>
+
     </div>
   );
 }
