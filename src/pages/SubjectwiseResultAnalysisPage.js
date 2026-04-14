@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { subjectNames } from '../constants';
 import { CHART_COLORS } from '../chartColors';
@@ -20,6 +20,8 @@ const markRangeOptions = [
   { label: '35 - 39.9', test: (m) => m >= 35 && m < 40 },
   { label: '< 35', test: (m) => m < 35 },
 ];
+
+const PRACTICAL_SUBJECT_CODES = new Set(['33', '34', '36', '41', '40']);
 
 const getSubjectCode = (subject) => String(subject.code || '').replace('*', '').trim();
 const YEARWISE_SUBJECT_MAP = {
@@ -288,16 +290,14 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
   const discontinued = selectedSubjectStudents.filter((s) => s.isAbsent).length;
   const totalAppearedFromRows = totalStudents - discontinued;
 
-  const practicalSubjectCodes = new Set(['33', '34', '36', '41', '40']);
-
-  const isSubjectFailed = ({ subjectCode, th, total, isAbsent }) => {
+  const isSubjectFailed = useCallback(({ subjectCode, th, total, isAbsent }) => {
     if (isAbsent) return true;
     if (total === null || total < 35) return true;
-    if (practicalSubjectCodes.has(subjectCode)) {
+    if (PRACTICAL_SUBJECT_CODES.has(subjectCode)) {
       return th === null || th < 21;
     }
     return th === null || th < 24;
-  };
+  }, []);
 
   const passedSubject = (s) =>
     !isSubjectFailed({
@@ -496,7 +496,7 @@ function SubjectwiseResultAnalysisPage({ processedData }) {
         };
       })
       .sort((a, b) => a.section.localeCompare(b.section));
-  }, [selectedSubjectStudents, selectedSubject, accountancyBumpKeys, englishSectionExpectedAppeared]);
+  }, [selectedSubjectStudents, selectedSubject, accountancyBumpKeys, englishSectionExpectedAppeared, isSubjectFailed]);
 
   const filteredSectionWiseRows = useMemo(() => {
     if (!isLanguageOrCsSubject || selectedStreamFilter === 'all') return sectionWiseRows;
